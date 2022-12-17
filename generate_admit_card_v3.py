@@ -158,12 +158,13 @@ def generate_print_data(data_by_school, template, external=False):
                         new_value = student[new_key]
                         if new_key == "Date of Birth":
                             new_value = str(new_value).split(" ")[0]
-                        space = PRINT_LEN//2-len(fi)
-                        se = " {}{}: {}".format(
-                            " "*space, new_key, new_value)
+                        # space = PRINT_LEN//2-len(fi)
+                        se = " {}: {}".format(
+                            new_key, new_value)
                     else:
                         se = ""
-                    temp_d = "{}{}".format(fi.ljust(0), se)
+                    space = PRINT_LEN - (len(fi)+len(se))
+                    temp_d = "{}{}{}".format(fi.ljust(0), " "*space, se)
                     data_list.append(temp_d)
 
             data_list.append(BOTTOM.center(PRINT_LEN, "*"))
@@ -179,7 +180,7 @@ def print_new(data_by_school):
 {3}
 {4}
 {5}
-{6}
+{6}\n
 {7}
 """
     st_external = """
