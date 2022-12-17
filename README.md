@@ -10,3 +10,5 @@ script to generate admit cards based on data provided in an excel sheet
 - put excel file in the directory which you want to read through
 - execute below command to run script
   > python3 generate_admit_card_v3.py
+- after execution, admit cards will ge written in the same directory with file name as: "Admit_Cards"
+- convert this file to .pdf format manually. 
