@@ -75,8 +75,9 @@ def read_data(sheet_obj):
                 k: rows[columns_we_need[k]] for k in columns_we_need.keys() if k != "Name"}
         else:
             duplicate += 1
-    print(len(final_data['Male'])+len(final_data['Female']))
-    print("duplicates: ", duplicate)
+    print("##################### Summary #####################")
+    print("total unique students: ", len(final_data['Male'])+len(final_data['Female']))
+    print("duplicates removed: ", duplicate)
     return final_data
 
 
@@ -166,6 +167,7 @@ def main():
     end_time = time.time()
     print_new(students_by_school)
     print("time took: {} seconds".format(end_time-start_time))
+    print("##################### Summary #####################")
 
 if __name__ == "__main__":
     main()
