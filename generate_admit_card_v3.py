@@ -14,6 +14,7 @@ FILL_CHAR = "*"
 file = "Panchyajanya_latest.xlsx"
 internal_output_file = "Admit_Cards_Internal_Use"
 external_output_file = "Admit_Cards_External_Use"
+duplicate_records_file = "Admit_Cards_duplicate"
 BANNER = " पाञ्चजन्य सामान्य ज्ञान प्रतियोगिता - २०२२ "
 BOTTOM = " प्रवेश पत्र "
 #################################### CONFIGS ####################################
@@ -26,9 +27,9 @@ def random_string(chars):
     return res
 
 
-columns_we_need = {"Registration No.": 1, "Name": 2, "Father's Name": 3,
-                   "Gender": 7, "Date of Birth": 8, "Class": 6, "School": 9,
-                   "Aadhar No. / School ID": 10, "Interest": 12}
+columns_we_need = {"Name": 2, "Roll No.": 11, "Registration No.": 1, "School": 9,
+                   "Class": 6, "Gender": 7, "Father's Name": 3, "Interest": 12, "Date of Birth": 8,
+                   "Aadhar No. / School ID": 10}
 
 
 def get_no_cols_rows(file):
@@ -38,24 +39,19 @@ def get_no_cols_rows(file):
 
 NO_OF_COLS, NO_OF_ROWS = get_no_cols_rows(file)
 
-
+duplicate_records = []
 def if_student_unique(final_data, row):
     is_unique = True
     for gender in final_data:
         for student in final_data[gender]:
             if student.lower().strip() == row[columns_we_need["Name"]].lower().strip():
-                print("same name found....")
-                print("old row: {0}: {1}\n".format(
-                    student, final_data[gender][student]))
-                print("New row: {0}\n".format(row))
-                print(
-                    "checking if Adhaar# is same as well, will ignore in case Adhaar# is same\n")
                 if str(final_data[gender][student]["Aadhar No. / School ID"]).lower().strip() == str(row[columns_we_need["Aadhar No. / School ID"]]).lower().strip():
-                    print("Adhaar# same, ignored...\n\n\n")
+                    dup_student = copy.deepcopy(final_data[gender][student])
+                    dup_student["Name"] = student
+                    duplicate_records.append(dup_student)
                     is_unique = False
                     break
                 else:
-                    print("Adhaar# not same, not ignored...\n\n\n")
                     new_name = "{0}_{1}".format(
                         student, random_string(len(student)))
                     row.pop(columns_we_need["Name"])
@@ -102,13 +98,13 @@ def group_by_interest(final_data):
 
 
 def assign_roll_number(student_by_interest):
-    roll_base = ROLL_BASE
+    global ROLL_BASE
     for gender in student_by_interest:
         for students in student_by_interest[gender].values():
             for student in students:
-                roll_base += 1
+                ROLL_BASE += 1
                 for key in student:
-                    student[key]["Roll No."] = roll_base
+                    student[key]["Roll No."] = ROLL_BASE
     return student_by_interest
 
 
@@ -126,6 +122,14 @@ def group_by_school(student_by_with_role):
                         students_by_school[student[key]
                                            ["School"]].append(student[key])
     return students_by_school
+
+
+def cast_float_to_int(key, value):
+    if key in ["Registration No.", "Aadhar No. / School ID", "Class"]:
+        if type(value) == float:
+            return int(value)
+    else:
+        return value
 
 
 def generate_print_data(data_by_school, template, external=False):
@@ -146,30 +150,53 @@ def generate_print_data(data_by_school, template, external=False):
             if external:
                 output_file = external_output_file
                 del student["Aadhar No. / School ID"]
-            sorted_keys = sorted(student)
+            sorted_keys = list(columns_we_need.keys())
             for indx, k in enumerate(sorted_keys):
-                if indx % 2 == 0:
-                    v = student[k]
-                    if k == "Date of Birth":
-                        v = str(v).split(" ")[0]
-                    fi = "{}: {}".format(k, v)
-                    if indx < len(student)-1:
+                if k != "Aadhar No. / School ID" and k != "Name":
+                    if indx % 2 != 0:
+                        v = student[k]
+                        if k == "Date of Birth":
+                            v = str(v).split(" ")[0]
+                        v = cast_float_to_int(k, v)
+                        fi = "{}: {}".format(k, v)
                         new_key = sorted_keys[indx+1]
                         new_value = student[new_key]
                         if new_key == "Date of Birth":
                             new_value = str(new_value).split(" ")[0]
-                        # space = PRINT_LEN//2-len(fi)
+                        new_value = cast_float_to_int(new_key, new_value)
                         se = " {}: {}".format(
                             new_key, new_value)
-                    else:
-                        se = ""
-                    space = PRINT_LEN - (len(fi)+len(se))
-                    temp_d = "{}{}{}".format(fi.ljust(0), " "*space, se)
-                    data_list.append(temp_d)
-
+                        space = PRINT_LEN - (len(fi)+len(se))
+                        temp_d = "{}{}{}".format(fi.ljust(0), " "*space, se)
+                        data_list.append(temp_d)
+            if not external:
+                identity = student["Aadhar No. / School ID"]
+                data_list.append("Aadhar No. / School ID: {}".format(
+                    identity).center(PRINT_LEN, " "))
             data_list.append(BOTTOM.center(PRINT_LEN, "*"))
             with open(output_file, "a") as f:
                 f.write(template.format(*data_list))
+
+def write_duplicate_record():
+    global ROLL_BASE
+    global duplicate_records
+    if os.path.exists(duplicate_records_file):
+        os.remove(duplicate_records_file)
+    with open(duplicate_records_file, "a") as f:
+        for student in duplicate_records:
+            ROLL_BASE += 1
+            student["Roll No."] = ROLL_BASE
+            f.write("{}\n".format(BANNER.center(PRINT_LEN+8, "*")))
+            for key in columns_we_need.keys():
+                value = cast_float_to_int(key, student[key])
+                if key == "Date of Birth":
+                    value = str(value).split(" ")[0]
+                st = "{}: {}".format(key, value)
+                f.write(st.center(PRINT_LEN, " "))
+                f.write("\n")
+            f.write("{}".format(BOTTOM.center(PRINT_LEN, "*")))
+            f.write("\n\n")
+
 
 
 def print_new(data_by_school):
@@ -194,6 +221,7 @@ def print_new(data_by_school):
 """
     generate_print_data(copy.deepcopy(data_by_school), st_external, True)
     generate_print_data(copy.deepcopy(data_by_school), st_internal)
+    write_duplicate_record()
 
 
 def main():
