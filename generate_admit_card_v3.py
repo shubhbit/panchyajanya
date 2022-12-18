@@ -115,12 +115,11 @@ def group_by_school(student_by_with_role):
             for student in students:
                 for key in student:
                     student[key]["Name"] = key
-                    if student[key]["School"] not in students_by_school:
-                        students_by_school[student[key]
-                                           ["School"]] = [student[key]]
+                    school_name = student[key]["School"].lower().strip()
+                    if school_name not in students_by_school:
+                        students_by_school[school_name] = [student[key]]
                     else:
-                        students_by_school[student[key]
-                                           ["School"]].append(student[key])
+                        students_by_school[school_name].append(student[key])
     return students_by_school
 
 
