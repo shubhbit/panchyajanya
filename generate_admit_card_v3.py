@@ -171,6 +171,7 @@ def generate_print_data(data_by_school, template, external=False):
                         data_list.append(temp_d)
             if not external:
                 identity = student["Aadhar No. / School ID"]
+                identity = cast_float_to_int("Aadhar No. / School ID", identity)
                 data_list.append("Aadhar No. / School ID: {}".format(
                     identity).center(PRINT_LEN, " "))
             data_list.append(BOTTOM.center(PRINT_LEN, "*"))
